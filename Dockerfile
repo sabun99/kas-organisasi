@@ -9,7 +9,8 @@ WORKDIR /var/www/html
 COPY . .
 
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
-RUN composer install --no-dev --optimize-autoloader --ignore-platform-reqs
+RUN composer install --no-dev --optimize-autoloader --no-scripts --ignore-platform-reqs
+
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
 RUN a2enmod rewrite
