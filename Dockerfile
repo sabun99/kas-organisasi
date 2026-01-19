@@ -1,22 +1,20 @@
-FROM php:8.2-fpm
+FROM php:8.2-apache
 
-# 1. Install dependencies (ditambah libpng dll untuk Laravel)
-RUN apt-get update && apt-get install -y nginx libpq-dev libpng-dev libzip-dev zip unzip
+RUN apt-get update && apt-get install -y \
+    git unzip zip libzip-dev \
+    libpng-dev libonig-dev libxml2-dev \
+    && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip
 
-# 2. Copy aplikasi
-COPY . /var/www/html
+WORKDIR /var/www/html
+COPY . .
 
-# 3. COPY KONFIGURASI NGINX (Penting!)
-COPY nginx.conf /etc/nginx/sites-available/default
-
-# 4. Install composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
-RUN cd /var/www/html && composer install --no-dev --optimize-autoloader
-
-# 5. Setup permissions
+RUN composer install --no-dev --optimize-autoloader --ignore-platform-reqs
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
-EXPOSE 8080
+RUN a2enmod rewrite
+RUN sed -i 's|/var/www/html|/var/www/html/public|g' /etc/apache2/sites-available/000-default.conf
 
-# 6. Jalankan Nginx di foreground agar container tidak mati
-CMD ["sh", "-c", "php-fpm -D && nginx -g 'daemon off;'"]
+EXPOSE 8080
+ENV PORT=8080
+CMD ["apache2-foreground"]
